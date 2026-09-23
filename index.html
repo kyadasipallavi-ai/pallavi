@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Makeup Studio Game</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #ffd6e7, #d9c2ff);
+      text-align: center;
+      color: #4b2142;
+    }
+
+    h1 {
+      margin: 20px 0 5px;
+    }
+
+    p {
+      margin-top: 5px;
+    }
+
+    .game {
+      width: min(950px, 95%);
+      margin: auto;
+      display: flex;
+      gap: 25px;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .stage {
+      position: relative;
+      width: 360px;
+      height: 460px;
+      background: #fff5fb;
+      border: 5px solid #ffffff;
+      border-radius: 25px;
+      box-shadow: 0 8px 25px #8d527055;
+      overflow: hidden;
+    }
+
+    .hair {
+      position: absolute;
+      width: 260px;
+      height: 310px;
+      top: 35px;
+      left: 50px;
+      background: #4a251c;
+      border-radius: 48% 48% 42% 42%;
+      z-index: 1;
+    }
+
+    .face {
+      position: absolute;
+      width: 210px;
+      height: 270px;
+      top: 70px;
+      left: 75px;
+      background: #f5bd91;
+      border-radius: 48% 48% 45% 45%;
+      z-index: 2;
+      transition: background 0.3s;
+    }
+
+    .eye {
+      position: absolute;
+      top: 105px;
+      width: 48px;
+      height: 18px;
+      background: white;
+      border: 3px solid #4b2142;
+      border-radius: 50%;
+    }
+
+    .eye::after {
+      content: "";
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      top: 0;
+      left: 15px;
+      background: #3a211b;
+      border-radius: 50%;
+    }
+
+    .left-eye {
+      left: 35px;
+    }
+
+    .right-eye {
+      right: 35px;
+    }
+
+    .eyeshadow {
+      position: absolute;
+      top: 91px;
+      width: 58px;
+      height: 25px;
+      border-radius: 50%;
+      background: transparent;
+      opacity: 0.8;
+      transition: background 0.3s;
+    }
+
+    .left-shadow {
+      left: 30px;
+    }
+
+    .right-shadow {
+      right: 30px;
+    }
+
+    .blush {
+      position: absolute;
+      top: 165px;
+      width: 48px;
+      height: 28px;
+      background: transparent;
+      border-radius: 50%;
+      opacity: 0.65;
+      transition: background 0.3s;
+    }
+
+    .left-blush {
+      left: 18px;
+    }
+
+    .right-blush {
+      right: 18px;
+    }
+
+    .nose {
+      position: absolute;
+      top: 125px;
+      left: 93px;
+      width: 25px;
+      height: 55px;
+      border-right: 3px solid #c78369;
+      border-bottom: 3px solid #c78369;
+      border-radius: 50%;
+    }
+
+    .lips {
+      position: absolute;
+      top: 205px;
+      left: 75px;
+      width: 62px;
+      height: 30px;
+      background: #d95678;
+      border-radius: 50% 50% 45% 45%;
+      transition: background 0.3s;
+    }
+
+    .lips::before {
+      content: "";
+      position: absolute;
+      top: 13px;
+      left: 3px;
+      width: 56px;
+      border-top: 3px solid #8f2b4a;
+    }
+
+    .neck {
+      position: absolute;
+      width: 75px;
+      height: 80px;
+      left: 142px;
+      top: 310px;
+      background: #f5bd91;
+      z-index: 1;
+    }
+
+    .shirt {
+      position: absolute;
+      width: 240px;
+      height: 100px;
+      left: 60px;
+      bottom: -25px;
+      background: #8b5cf6;
+      border-radius: 50% 50% 0 0;
+      z-index: 3;
+    }
+
+    .controls {
+      width: 380px;
+      padding: 20px;
+      background: #ffffffcc;
+      border-radius: 20px;
+      box-shadow: 0 8px 25px #8d527055;
+    }
+
+    .controls h2 {
+      margin-top: 0;
+    }
+
+    .section {
+      margin: 15px 0;
+    }
+
+    .section strong {
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    button {
+      border: 0;
+      margin: 5px;
+      padding: 11px 15px;
+      border-radius: 20px;
+      cursor: pointer;
+      color: white;
+      font-weight: bold;
+      transition: transform 0.2s;
+    }
+
+    button:hover {
+      transform: scale(1.08);
+    }
+
+    .skin-button {
+      background: #e5a77d;
+    }
+
+    .hair-button {
+      background: #5b3428;
+    }
+
+    .pink {
+      background: #e94f83;
+    }
+
+    .red {
+      background: #d62839;
+    }
+
+    .purple {
+      background: #9146c7;
+    }
+
+    .blue {
+      background: #3978d3;
+    }
+
+    .peach {
+      background: #f28c72;
+    }
+
+    .reset {
+      background: #555;
+      width: 130px;
+    }
+
+    #message {
+      min-height: 25px;
+      font-weight: bold;
+      color: #a52b6a;
+    }
+
+    #score {
+      font-size: 20px;
+      font-weight: bold;
+      color: #7b2cbf;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>💄 My Makeup Studio 💄</h1>
+  <p>Choose makeup and create your own style!</p>
+
+  <div class="game">
+    <div class="stage">
+      <div id="hair" class="hair"></div>
+      <div id="face" class="face">
+        <div id="leftShadow" class="eyeshadow left-shadow"></div>
+        <div id="rightShadow" class="eyeshadow right-shadow"></div>
+
+        <div class="eye left-eye"></div>
+        <div class="eye right-eye"></div>
+
+        <div id="leftBlush" class="blush left-blush"></div>
+        <div id="rightBlush" class="blush right-blush"></div>
+
+        <div class="nose"></div>
+        <div id="lips" class="lips"></div>
+      </div>
+
+      <div id="neck" class="neck"></div>
+      <div class="shirt"></div>
+    </div>
+
+    <div class="controls">
+      <h2>Makeup Tools</h2>
+
+      <div class="section">
+        <strong>Skin Tone</strong>
+        <button class="skin-button" onclick="changeSkin('#f5bd91')">Light</button>
+        <button class="skin-button" onclick="changeSkin('#d99468')">Medium</button>
+        <button class="skin-button" onclick="changeSkin('#9b5b3f')">Deep</button>
+      </div>
+
+      <div class="section">
+        <strong>Eyeshadow</strong>
+        <button class="pink" onclick="changeEyeshadow('#ec4899')">Pink</button>
+        <button class="purple" onclick="changeEyeshadow('#9333ea')">Purple</button>
+        <button class="blue" onclick="changeEyeshadow('#2563eb')">Blue</button>
+      </div>
+
+      <div class="section">
+        <strong>Blush</strong>
+        <button class="peach" onclick="changeBlush('#ff8066')">Peach</button>
+        <button class="pink" onclick="changeBlush('#f43f5e')">Rose</button>
+      </div>
+
+      <div class="section">
+        <strong>Lipstick</strong>
+        <button class="pink" onclick="changeLips('#e94f83')">Pink</button>
+        <button class="red" onclick="changeLips('#c1121f')">Red</button>
+        <button class="purple" onclick="changeLips('#8b2fc9')">Plum</button>
+      </div>
+
+      <div class="section">
+        <strong>Hair Color</strong>
+        <button class="hair-button" onclick="changeHair('#4a251c')">Brown</button>
+        <button class="red" onclick="changeHair('#a83232')">Red</button>
+        <button class="purple" onclick="changeHair('#542080')">Purple</button>
+      </div>
+
+      <p id="score">Style Score: 0</p>
+      <p id="message">Start your makeover!</p>
+
+      <button class="reset" onclick="resetGame()">Reset</button>
+    </div>
+  </div>
+
+  <script>
+    let score = 0;
+
+    const face = document.getElementById("face");
+    const neck = document.getElementById("neck");
+    const hair = document.getElementById("hair");
+    const lips = document.getElementById("lips");
+    const leftShadow = document.getElementById("leftShadow");
+    const rightShadow = document.getElementById("rightShadow");
+    const leftBlush = document.getElementById("leftBlush");
+    const rightBlush = document.getElementById("rightBlush");
+    const scoreText = document.getElementById("score");
+    const message = document.getElementById("message");
+
+    function addScore(points, text) {
+      score += points;
+      scoreText.textContent = "Style Score: " + score;
+      message.textContent = text;
+    }
+
+    function changeSkin(color) {
+      face.style.background = color;
+      neck.style.background = color;
+      addScore(10, "Beautiful skin tone!");
+    }
+
+    function changeEyeshadow(color) {
+      leftShadow.style.background = color;
+      rightShadow.style.background = color;
+      addScore(15, "Your eyes look amazing!");
+    }
+
+    function changeBlush(color) {
+      leftBlush.style.background = color;
+      rightBlush.style.background = color;
+      addScore(10, "Lovely blush!");
+    }
+
+    function changeLips(color) {
+      lips.style.background = color;
+      addScore(15, "Perfect lipstick!");
+    }
+
+    function changeHair(color) {
+      hair.style.background = color;
+      addScore(10, "Great hairstyle color!");
+    }
+
+    function resetGame() {
+      face.style.background = "#f5bd91";
+      neck.style.background = "#f5bd91";
+      hair.style.background = "#4a251c";
+      lips.style.background = "#d95678";
+      leftShadow.style.background = "transparent";
+      rightShadow.style.background = "transparent";
+      leftBlush.style.background = "transparent";
+      rightBlush.style.background = "transparent";
+
+      score = 0;
+      scoreText.textContent = "Style Score: 0";
+      message.textContent = "Start your makeover!";
+    }
+  </script>
+</body>
+</html>
