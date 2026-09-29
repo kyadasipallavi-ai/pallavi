@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phishing Email Detection Model</title>
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #eef3f8;
+        color: #172b4d;
+    }
+
+    header {
+        background: #102a43;
+        color: white;
+        text-align: center;
+        padding: 25px;
+    }
+
+    header h1 {
+        margin: 0;
+        font-size: 30px;
+    }
+
+    header p {
+        margin: 8px 0 0;
+        color: #d9e2ec;
+    }
+
+    .container {
+        width: 90%;
+        max-width: 1000px;
+        margin: 25px auto;
+    }
+
+    .card {
+        background: white;
+        padding: 25px;
+        margin-bottom: 20px;
+        border-radius: 12px;
+        box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+    }
+
+    h2 {
+        color: #1769aa;
+        margin-top: 0;
+    }
+
+    textarea {
+        width: 100%;
+        height: 180px;
+        padding: 15px;
+        border: 1px solid #bcccdc;
+        border-radius: 8px;
+        font-size: 15px;
+        resize: vertical;
+    }
+
+    button {
+        background: #1769aa;
+        color: white;
+        border: none;
+        padding: 12px 22px;
+        border-radius: 7px;
+        cursor: pointer;
+        font-size: 15px;
+        margin-top: 12px;
+    }
+
+    button:hover {
+        background: #0d47a1;
+    }
+
+    .result {
+        margin-top: 20px;
+        padding: 18px;
+        border-radius: 8px;
+        display: none;
+        font-size: 18px;
+        font-weight: bold;
+    }
+
+    .phishing {
+        background: #ffebee;
+        color: #c62828;
+    }
+
+    .safe {
+        background: #e8f5e9;
+        color: #2e7d32;
+    }
+
+    .features {
+        margin-top: 15px;
+        padding: 15px;
+        background: #f5f7fa;
+        border-radius: 8px;
+    }
+
+    .matrix {
+        border-collapse: collapse;
+        margin-top: 15px;
+        width: 100%;
+        max-width: 600px;
+    }
+
+    .matrix th,
+    .matrix td {
+        border: 1px solid #bcccdc;
+        padding: 14px;
+        text-align: center;
+    }
+
+    .matrix th {
+        background: #d9eaf7;
+    }
+
+    .accuracy {
+        font-size: 25px;
+        font-weight: bold;
+        color: #1769aa;
+    }
+
+    li {
+        margin: 10px 0;
+    }
+
+    .report {
+        line-height: 1.7;
+        background: #f8fafc;
+        padding: 15px;
+        border-radius: 8px;
+    }
+
+    footer {
+        text-align: center;
+        padding: 20px;
+        background: #102a43;
+        color: white;
+        margin-top: 30px;
+    }
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>🛡️ Phishing Email Detection Model</h1>
+    <p>Basic Machine Learning & Cyber Security Project</p>
+</header>
+
+<div class="container">
+
+    <!-- PROJECT FEATURES -->
+    <div class="card">
+        <h2>Key Features</h2>
+
+        <ul>
+            <li>Train on a dataset of phishing and legitimate emails</li>
+            <li>Extract and analyze email features such as URLs and keywords</li>
+            <li>Classify emails as "Phishing" or "Safe"</li>
+            <li>Display model accuracy</li>
+            <li>Display confusion matrix</li>
+            <li>Generate a simple vulnerability/detection report</li>
+        </ul>
+    </div>
+
+    <!-- EMAIL TESTING -->
+    <div class="card">
+        <h2>📧 Test an Email</h2>
+
+        <p>Paste an email message below:</p>
+
+        <textarea id="emailText"
+        placeholder="Example:
+Congratulations! You have won a prize.
+Click http://example.com/login and verify your account immediately."></textarea>
+
+        <br>
+
+        <button onclick="detectPhishing()">
+            🔍 Detect Phishing
+        </button>
+
+        <button onclick="loadExample()">
+            📝 Load Example
+        </button>
+
+        <div id="result" class="result"></div>
+
+        <div id="features" class="features" style="display:none;"></div>
+    </div>
+
+    <!-- MODEL PERFORMANCE -->
+    <div class="card">
+        <h2>📊 Model Performance</h2>
+
+        <p>Testing the model against the built-in dataset:</p>
+
+        <div class="accuracy" id="accuracy">
+            Calculating...
+        </div>
+
+        <h3>Confusion Matrix</h3>
+
+        <table class="matrix">
+            <tr>
+                <th></th>
+                <th>Predicted Safe</th>
+                <th>Predicted Phishing</th>
+            </tr>
+
+            <tr>
+                <th>Actual Safe</th>
+                <td id="tn">0</td>
+                <td id="fp">0</td>
+            </tr>
+
+            <tr>
+                <th>Actual Phishing</th>
+                <td id="fn">0</td>
+                <td id="tp">0</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- REPORT -->
+    <div class="card">
+        <h2>📄 Detection Report</h2>
+
+        <div id="report" class="report">
+            No email has been analyzed yet.
+        </div>
+    </div>
+
+    <!-- EXPECTED OUTCOME -->
+    <div class="card">
+        <h2>🎯 Expected Outcome</h2>
+
+        <p>
+            The model successfully classifies emails as
+            <strong>Phishing</strong> or <strong>Safe</strong>
+            with high accuracy based on textual content and URL features.
+        </p>
+    </div>
+
+</div>
+
+<footer>
+    Phishing Email Detection | Cyber Security Project
+</footer>
+
+
+<script>
+
+/*
+====================================================
+1. TRAINING DATASET
+====================================================
+*/
+
+const trainingData = [
+
+    {
+        text: "Congratulations you won a prize click the link to claim your reward",
+        label: "phishing"
+    },
+
+    {
+        text: "Urgent verify your account immediately click the suspicious link",
+        label: "phishing"
+    },
+
+    {
+        text: "Your bank account has been suspended login now to restore access",
+        label: "phishing"
+    },
+
+    {
+        text: "You have won a lottery prize provide your password to receive money",
+        label: "phishing"
+    },
+
+    {
+        text: "Click this link immediately to confirm your account http://fake-login.com",
+        label: "phishing"
+    },
+
+    {
+        text: "Important security alert your account will be closed verify your password",
+        label: "phishing"
+    },
+
+    {
+        text: "Meeting scheduled for tomorrow at 10 AM please review the attached agenda",
+        label: "safe"
+    },
+
+    {
+        text: "Your monthly report is ready please review the document",
+        label: "safe"
+    },
+
+    {
+        text: "Thank you for attending the meeting we will send the project report",
+        label: "safe"
+    },
+
+    {
+        text: "Your order has been shipped and will arrive tomorrow",
+        label: "safe"
+    },
+
+    {
+        text: "Please find the project presentation attached for your review",
+        label: "safe"
+    },
+
+    {
+        text: "The team meeting has been moved to Friday afternoon",
+        label: "safe"
+    }
+];
+
+
+/*
+====================================================
+2. WORD TOKENIZER
+====================================================
+*/
+
+function tokenize(text) {
+
+    return text
+        .toLowerCase()
+        .replace(/[^a-z0-9:/.-]/g, " ")
+        .split(/\s+/)
+        .filter(word => word.length > 2);
+}
+
+
+/*
+====================================================
+3. TRAIN NAIVE BAYES MODEL
+====================================================
+*/
+
+function trainModel(data) {
+
+    const model = {
+        phishing: {},
+        safe: {},
+        phishingTotal: 0,
+        safeTotal: 0,
+        phishingCount: 0,
+        safeCount: 0
+    };
+
+    data.forEach(item => {
+
+        const words = tokenize(item.text);
+
+        if (item.label === "phishing") {
+
+            model.phishingCount++;
+
+            words.forEach(word => {
+                model.phishing[word] =
+                    (model.phishing[word] || 0) + 1;
+
+                model.phishingTotal++;
+            });
+
+        } else {
+
+            model.safeCount++;
+
+            words.forEach(word => {
+                model.safe[word] =
+                    (model.safe[word] || 0) + 1;
+
+                model.safeTotal++;
+            });
+        }
+    });
+
+    return model;
+}
+
+const model = trainModel(trainingData);
+
+
+/*
+====================================================
+4. FEATURE EXTRACTION
+====================================================
+*/
+
+function extractFeatures(text) {
+
+    const lower = text.toLowerCase();
+
+    const urls =
+        (text.match(/https?:\/\/[^\s]+/gi) || []);
+
+    const suspiciousWords = [
+        "urgent",
+        "verify",
+        "password",
+        "login",
+        "account",
+        "winner",
+        "won",
+        "prize",
+        "claim",
+        "suspended",
+        "click",
+        "confirm",
+        "security alert",
+        "immediately"
+    ];
+
+    let keywordCount = 0;
+
+    suspiciousWords.forEach(word => {
+
+        if (lower.includes(word)) {
+            keywordCount++;
+        }
+    });
+
+    const hasURL = urls.length > 0;
+
+    const hasHTTP = urls.some(url =>
+        url.toLowerCase().startsWith("http://")
+    );
+
+    return {
+        urls: urls,
+        urlCount: urls.length,
+        keywordCount: keywordCount,
+        hasURL: hasURL,
+        hasHTTP: hasHTTP
+    };
+}
+
+
+/*
+====================================================
+5. NAIVE BAYES CLASSIFIER
+====================================================
+*/
+
+function classify(text) {
+
+    const words = tokenize(text);
+
+    let phishingScore =
+        Math.log(model.phishingCount /
+        (model.phishingCount + model.safeCount));
+
+    let safeScore =
+        Math.log(model.safeCount /
+        (model.phishingCount + model.safeCount));
+
+    const vocabulary = new Set([
+        ...Object.keys(model.phishing),
+        ...Object.keys(model.safe)
+    ]);
+
+    const vocabSize = vocabulary.size;
+
+    words.forEach(word => {
+
+        const phishingWord =
+            (model.phishing[word] || 0) + 1;
+
+        const safeWord =
+            (model.safe[word] || 0) + 1;
+
+        phishingScore += Math.log(
+            phishingWord /
+            (model.phishingTotal + vocabSize)
+        );
+
+        safeScore += Math.log(
+            safeWord /
+            (model.safeTotal + vocabSize)
+        );
+    });
+
+
+    /*
+    Add URL and suspicious keyword signals
+    */
+
+    const features = extractFeatures(text);
+
+    if (features.hasURL) {
+        phishingScore += 0.8;
+    }
+
+    if (features.hasHTTP) {
+        phishingScore += 1.2;
+    }
+
+    phishingScore += features.keywordCount * 0.5;
+
+
+    if (phishingScore > safeScore) {
+        return "phishing";
+    }
+
+    return "safe";
+}
+
+
+/*
+====================================================
+6. TEST MODEL & CONFUSION MATRIX
+====================================================
+*/
+
+function evaluateModel() {
+
+    let tp = 0;
+    let tn = 0;
+    let fp = 0;
+    let fn = 0;
+
+    trainingData.forEach(item => {
+
+        const prediction = classify(item.text);
+
+        if (item.label === "phishing" &&
+            prediction === "phishing") {
+
+            tp++;
+
+        } else if (
+            item.label === "safe" &&
+            prediction === "safe") {
+
+            tn++;
+
+        } else if (
+            item.label === "safe" &&
+            prediction === "phishing") {
+
+            fp++;
+
+        } else if (
+            item.label === "phishing" &&
+            prediction === "safe") {
+
+            fn++;
+        }
+    });
+
+    const accuracy =
+        ((tp + tn) /
+        (tp + tn + fp + fn)) * 100;
+
+    document.getElementById("accuracy").innerText =
+        "Accuracy: " + accuracy.toFixed(2) + "%";
+
+    document.getElementById("tp").innerText = tp;
+    document.getElementById("tn").innerText = tn;
+    document.getElementById("fp").innerText = fp;
+    document.getElementById("fn").innerText = fn;
+}
+
+
+/*
+====================================================
+7. DETECT USER EMAIL
+====================================================
+*/
+
+function detectPhishing() {
+
+    const text =
+        document.getElementById("emailText").value.trim();
+
+    if (text === "") {
+
+        alert("Please enter an email message.");
+
+        return;
+    }
+
+    const prediction = classify(text);
+
+    const features = extractFeatures(text);
+
+    const result =
+        document.getElementById("result");
+
+    const featureBox =
+        document.getElementById("features");
+
+    result.style.display = "block";
+
+    if (prediction === "phishing") {
+
+        result.className =
+            "result phishing";
+
+        result.innerHTML =
+            "⚠️ Result: PHISHING EMAIL";
+
+    } else {
+
+        result.className =
+            "result safe";
+
+        result.innerHTML =
+            "✅ Result: SAFE EMAIL";
+    }
+
+
+    /*
+    Show extracted features
+    */
+
+    featureBox.style.display = "block";
+
+    featureBox.innerHTML = `
+        <strong>Extracted Features</strong>
+        <br><br>
+
+        🔗 URLs found:
+        ${features.urlCount}
+
+        <br>
+
+        🚨 Suspicious keywords:
+        ${features.keywordCount}
+
+        <br>
+
+        🌐 HTTP URL detected:
+        ${features.hasHTTP ? "Yes" : "No"}
+
+        <br>
+
+        📌 Classification:
+        ${prediction.toUpperCase()}
+    `;
+
+
+    /*
+    Generate report
+    */
+
+    generateReport(
+        prediction,
+        features
+    );
+}
+
+
+/*
+====================================================
+8. GENERATE REPORT
+====================================================
+*/
+
+function generateReport(prediction, features) {
+
+    const report =
+        document.getElementById("report");
+
+    let message = "";
+
+    if (prediction === "phishing") {
+
+        message = `
+            <strong>⚠️ Potential Phishing Detected</strong>
+            <br><br>
+
+            The email contains indicators commonly
+            associated with phishing messages.
+
+            <br><br>
+
+            <strong>Recommendations:</strong>
+            <ul>
+                <li>Do not click suspicious links.</li>
+                <li>Do not provide passwords or personal information.</li>
+                <li>Verify the sender independently.</li>
+                <li>Report suspicious emails.</li>
+            </ul>
+        `;
+
+    } else {
+
+        message = `
+            <strong>✅ Email Appears Safe</strong>
+            <br><br>
+
+            The email does not contain enough indicators
+            to classify it as phishing using this
+            demonstration model.
+
+            <br><br>
+
+            Always verify unexpected messages before
+            clicking links or sharing information.
+        `;
+    }
+
+    report.innerHTML = message;
+}
+
+
+/*
+====================================================
+9. LOAD EXAMPLE
+====================================================
+*/
+
+function loadExample() {
+
+    document.getElementById("emailText").value =
+`Urgent security alert!
+
+Your account has been suspended.
+
+Please verify your password immediately by
+clicking the link below:
+
+http://fake-login-example.com/verify
+
+Failure to verify your account will result
+in permanent suspension.`;
+}
+
+
+/*
+====================================================
+10. START MODEL EVALUATION
+====================================================
+*/
+
+evaluateModel();
+
+</script>
+
+</body>
+</html>
