@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
+
+<title>Vulnerability Scanner</title>
+
+<style>
+
+* {
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    margin: 0;
+    padding: 30px 15px;
+    background: #f3f6fa;
+}
+
+.container {
+    max-width: 950px;
+    margin: auto;
+    background: white;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.12);
+}
+
+h1 {
+    text-align: center;
+    color: #1769e0;
+}
+
+.subtitle {
+    text-align: center;
+    color: #666;
+    margin-bottom: 25px;
+}
+
+.search {
+    display: flex;
+    gap: 10px;
+}
+
+input {
+    flex: 1;
+    padding: 14px;
+    border: 1px solid #bbb;
+    border-radius: 8px;
+    font-size: 16px;
+}
+
+button {
+    background: #1769e0;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 14px 25px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #0c55bb;
+}
+
+.loading {
+    display: none;
+    text-align: center;
+    margin: 25px;
+    color: #1769e0;
+    font-size: 18px;
+}
+
+.report {
+    display: none;
+    margin-top: 30px;
+}
+
+.target {
+    background: #eef5ff;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.card {
+    padding: 20px;
+    color: white;
+    text-align: center;
+    border-radius: 10px;
+}
+
+.card h2 {
+    font-size: 32px;
+    margin: 0;
+}
+
+.high {
+    background: #dc3545;
+}
+
+.medium {
+    background: #f39c12;
+}
+
+.low {
+    background: #3498db;
+}
+
+.section {
+    margin-top: 30px;
+}
+
+.port {
+    padding: 15px;
+    background: #f5f5f5;
+    margin: 8px 0;
+    border-radius: 7px;
+    border-left: 5px solid #1769e0;
+}
+
+.vulnerability {
+    padding: 16px;
+    margin: 10px 0;
+    border-radius: 8px;
+    background: #f8f8f8;
+    border-left: 5px solid #999;
+}
+
+.vulnerability.High {
+    border-left-color: #dc3545;
+}
+
+.vulnerability.Medium {
+    border-left-color: #f39c12;
+}
+
+.vulnerability.Low {
+    border-left-color: #3498db;
+}
+
+.badge {
+    display: inline-block;
+    padding: 5px 9px;
+    border-radius: 5px;
+    color: white;
+    font-size: 12px;
+    margin-bottom: 7px;
+}
+
+.badge.High {
+    background: #dc3545;
+}
+
+.badge.Medium {
+    background: #f39c12;
+}
+
+.badge.Low {
+    background: #3498db;
+}
+
+pre {
+    background: #222;
+    color: #eee;
+    padding: 12px;
+    border-radius: 7px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.error {
+    background: #ffe5e5;
+    color: #a00;
+    padding: 15px;
+    border-radius: 8px;
+}
+
+@media(max-width:600px) {
+
+    .search {
+        flex-direction: column;
+    }
+
+    button {
+        width: 100%;
+    }
+
+    .summary {
+        grid-template-columns: 1fr;
+    }
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>🔍 Vulnerability Scanner</h1>
+
+<p class="subtitle">
+Simple Web Security Vulnerability Assessment Tool
+</p>
+
+<div class="search">
+
+<input
+    type="text"
+    id="target"
+    placeholder="Enter target e.g. example.com">
+
+<button onclick="startScan()">
+Scan Website
+</button>
+
+</div>
+
+<div id="loading" class="loading">
+🔄 Scanning... Please wait.
+</div>
+
+<div id="report" class="report"></div>
+
+</div>
+
+
+<script>
+
+async function startScan() {
+
+    const target =
+        document.getElementById("target").value.trim();
+
+    if (!target) {
+
+        alert("Please enter a target.");
+
+        return;
+    }
+
+    document.getElementById("loading")
+        .style.display = "block";
+
+    document.getElementById("report")
+        .style.display = "none";
+
+    try {
+
+        const response =
+            await fetch(
+                "/scan?target=" +
+                encodeURIComponent(target)
+            );
+
+        const data =
+            await response.json();
+
+        document.getElementById("loading")
+            .style.display = "none";
+
+        showReport(data);
+
+    }
+
+    catch (error) {
+
+        document.getElementById("loading")
+            .style.display = "none";
+
+        document.getElementById("report").innerHTML =
+            `<div class="error">
+                Scanner error: ${escapeHTML(error.message)}
+             </div>`;
+
+        document.getElementById("report")
+            .style.display = "block";
+    }
+}
+
+
+function showReport(data) {
+
+    const report =
+        document.getElementById("report");
+
+    if (data.error) {
+
+        report.innerHTML =
+            `<div class="error">
+                ${escapeHTML(data.error)}
+             </div>`;
+
+        report.style.display = "block";
+
+        return;
+    }
+
+
+    let high = 0;
+    let medium = 0;
+    let low = 0;
+
+
+    data.vulnerabilities.forEach(v => {
+
+        if (v.severity === "High") {
+            high++;
+        }
+
+        else if (v.severity === "Medium") {
+            medium++;
+        }
+
+        else if (v.severity === "Low") {
+            low++;
+        }
+
+    });
+
+
+    let html = `
+
+        <div class="target">
+
+            <strong>Target:</strong>
+            ${escapeHTML(data.target)}
+
+            <br><br>
+
+            <strong>IP Address:</strong>
+            ${escapeHTML(data.ip)}
+
+        </div>
+
+
+        <div class="summary">
+
+            <div class="card high">
+
+                <h2>${high}</h2>
+
+                <p>High Risk</p>
+
+            </div>
+
+
+            <div class="card medium">
+
+                <h2>${medium}</h2>
+
+                <p>Medium Risk</p>
+
+            </div>
+
+
+            <div class="card low">
+
+                <h2>${low}</h2>
+
+                <p>Low Risk</p>
+
+            </div>
+
+        </div>
+
+
+        <div class="section">
+
+            <h2>🔌 Open Ports</h2>
+
+    `;
+
+
+    if (data.ports.length === 0) {
+
+        html += `
+            <div class="port">
+                No common open ports detected.
+            </div>
+        `;
+
+    }
+
+    else {
+
+        data.ports.forEach(port => {
+
+            html += `
+
+                <div class="port">
+
+                    <strong>
+                        Port ${port.port}
+                    </strong>
+
+                    -
+                    ${escapeHTML(port.service)}
+
+                    ${
+                        port.banner
+                        ?
+                        `<pre>${escapeHTML(port.banner)}</pre>`
+                        :
+                        ""
+                    }
+
+                </div>
+
+            `;
+
+        });
+
+    }
+
+
+    html += `
+
+        </div>
+
+
+        <div class="section">
+
+            <h2>🖥️ Software / Service Information</h2>
+
+    `;
+
+
+    if (data.software.length === 0) {
+
+        html += `
+            <div class="port">
+                No software version information detected.
+            </div>
+        `;
+
+    }
+
+    else {
+
+        data.software.forEach(item => {
+
+            html += `
+
+                <div class="port">
+
+                    <strong>
+                        ${escapeHTML(item.service)}
+                    </strong>
+
+                    <br>
+
+                    Port:
+                    ${item.port}
+
+                    <br>
+
+                    Version / Banner:
+
+                    <pre>${escapeHTML(
+                        item.version
+                    )}</pre>
+
+                </div>
+
+            `;
+
+        });
+
+    }
+
+
+    html += `
+
+        </div>
+
+
+        <div class="section">
+
+            <h2>🛡️ Vulnerability Report</h2>
+
+    `;
+
+
+    if (data.vulnerabilities.length === 0) {
+
+        html += `
+            <div class="vulnerability">
+                No issues were detected by the checks
+                performed by this mini scanner.
+            </div>
+        `;
+
+    }
+
+    else {
+
+        data.vulnerabilities.forEach(v => {
+
+            html += `
+
+                <div class="vulnerability ${v.severity}">
+
+                    <span class="badge ${v.severity}">
+                        ${escapeHTML(v.severity)}
+                    </span>
+
+                    <h3>
+                        ${escapeHTML(v.title)}
+                    </h3>
+
+                    <p>
+                        ${escapeHTML(v.description)}
+                    </p>
+
+                </div>
+
+            `;
+
+        });
+
+    }
+
+
+    html += `
+
+        </div>
+
+        <div class="section">
+
+            <h2>🌐 HTTP Security Headers</h2>
+
+    `;
+
+
+    if (data.http &&
+        data.http.headers) {
+
+        for (
+            const [name, value]
+            of Object.entries(data.http.headers)
+        ) {
+
+            html += `
+
+                <div class="port">
+
+                    <strong>
+                        ${escapeHTML(name)}
+                    </strong>
+
+                    <br>
+
+                    ${escapeHTML(value)}
+
+                </div>
+
+            `;
+
+        }
+
+    }
+
+
+    html += `</div>`;
+
+
+    report.innerHTML = html;
+
+    report.style.display = "block";
+}
+
+
+function escapeHTML(value) {
+
+    return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+</script>
+
+</body>
+
+</html>
