@@ -1,0 +1,454 @@
+import http.server
+import socket
+import json
+import urllib.parse
+import urllib.request
+import os
+
+PORT = 8000
+
+# Common ports for the mini project
+COMMON_PORTS = {
+    21: "FTP",
+    22: "SSH",
+    25: "SMTP",
+    53: "DNS",
+    80: "HTTP",
+    110: "POP3",
+    143: "IMAP",
+    443: "HTTPS",
+    3306: "MySQL",
+    3389: "RDP",
+    8080: "HTTP-Proxy"
+}
+
+
+def scan_port(host, port):
+    """
+    Check whether a TCP port is reachable.
+    """
+
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(0.8)
+
+        result = sock.connect_ex((host, port))
+
+        sock.close()
+
+        return result == 0
+
+    except Exception:
+        return False
+
+
+def get_banner(host, port):
+    """
+    Try to obtain a basic service banner.
+    This is useful for identifying software/services.
+    """
+
+    try:
+
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(1.5)
+
+        sock.connect((host, port))
+
+        if port in [21, 22, 25, 110, 143]:
+            try:
+                banner = sock.recv(512).decode(
+                    "utf-8",
+                    errors="ignore"
+                )
+                sock.close()
+
+                return banner.strip()
+
+            except Exception:
+                sock.close()
+                return ""
+
+        if port in [80, 8080]:
+
+            request = (
+                "HEAD / HTTP/1.0\r\n"
+                "Host: " + host + "\r\n"
+                "Connection: close\r\n\r\n"
+            )
+
+            sock.send(request.encode())
+
+            data = sock.recv(2048).decode(
+                "utf-8",
+                errors="ignore"
+            )
+
+            sock.close()
+
+            return data
+
+        sock.close()
+
+    except Exception:
+        return ""
+
+    return ""
+
+
+def check_http(target):
+
+    result = {
+        "https": False,
+        "server": "",
+        "headers": {},
+        "issues": []
+    }
+
+    try:
+
+        if not target.startswith("http://") and \
+           not target.startswith("https://"):
+
+            target = "https://" + target
+
+        request = urllib.request.Request(
+            target,
+            headers={
+                "User-Agent": "Mini-Vulnerability-Scanner/1.0"
+            }
+        )
+
+        response = urllib.request.urlopen(
+            request,
+            timeout=5
+        )
+
+        headers = response.headers
+
+        result["https"] = target.startswith("https://")
+
+        server = headers.get("Server")
+
+        if server:
+            result["server"] = server
+
+        important_headers = [
+            "Content-Security-Policy",
+            "X-Frame-Options",
+            "X-Content-Type-Options",
+            "Strict-Transport-Security",
+            "Referrer-Policy",
+            "Permissions-Policy"
+        ]
+
+        for header in important_headers:
+
+            value = headers.get(header)
+
+            if value:
+                result["headers"][header] = value
+            else:
+                result["headers"][header] = "Missing"
+
+                result["issues"].append(
+                    "Missing security header: " + header
+                )
+
+        if not result["https"]:
+
+            result["issues"].append(
+                "HTTPS is not enabled."
+            )
+
+    except Exception as error:
+
+        result["issues"].append(
+            "HTTP scan could not be completed: "
+            + str(error)
+        )
+
+    return result
+
+
+def perform_scan(target):
+
+    target = target.strip()
+
+    if target == "":
+        return {
+            "error": "Please enter a target."
+        }
+
+    # Remove protocol for socket scanning
+    clean_target = target
+
+    if clean_target.startswith("https://"):
+        clean_target = clean_target[8:]
+
+    elif clean_target.startswith("http://"):
+        clean_target = clean_target[7:]
+
+    # Remove path
+    clean_target = clean_target.split("/")[0]
+
+    # Remove port if manually supplied
+    if ":" in clean_target:
+
+        parts = clean_target.rsplit(":", 1)
+
+        if parts[1].isdigit():
+            clean_target = parts[0]
+
+    try:
+
+        ip_address = socket.gethostbyname(clean_target)
+
+    except Exception:
+
+        return {
+            "error": "Unable to resolve hostname."
+        }
+
+    result = {
+        "target": clean_target,
+        "ip": ip_address,
+        "ports": [],
+        "http": {},
+        "software": [],
+        "vulnerabilities": []
+    }
+
+    # -----------------------------------
+    # PORT SCANNING
+    # -----------------------------------
+
+    for port, service in COMMON_PORTS.items():
+
+        if scan_port(ip_address, port):
+
+            banner = get_banner(
+                ip_address,
+                port
+            )
+
+            result["ports"].append({
+                "port": port,
+                "service": service,
+                "banner": banner[:300]
+            })
+
+            # -----------------------------------
+            # BASIC SOFTWARE IDENTIFICATION
+            # -----------------------------------
+
+            if banner:
+
+                result["software"].append({
+                    "port": port,
+                    "service": service,
+                    "version": banner[:200]
+                })
+
+            # -----------------------------------
+            # BASIC VULNERABILITY RULES
+            # -----------------------------------
+
+            if port == 21:
+
+                result["vulnerabilities"].append({
+                    "severity": "Medium",
+                    "title": "FTP Service Detected",
+                    "description":
+                        "FTP is an older file-transfer protocol. "
+                        "If possible, use a secure alternative such as SFTP."
+                })
+
+            if port == 23:
+
+                result["vulnerabilities"].append({
+                    "severity": "High",
+                    "title": "Telnet Detected",
+                    "description":
+                        "Telnet sends communication without modern encryption."
+                })
+
+            if port == 3389:
+
+                result["vulnerabilities"].append({
+                    "severity": "Medium",
+                    "title": "RDP Port Exposed",
+                    "description":
+                        "Remote Desktop is accessible on TCP port 3389. "
+                        "Restrict access to trusted networks where possible."
+                })
+
+            if port == 3306:
+
+                result["vulnerabilities"].append({
+                    "severity": "Medium",
+                    "title": "MySQL Port Detected",
+                    "description":
+                        "MySQL is accessible on its default port. "
+                        "Database services should normally be restricted."
+                })
+
+    # -----------------------------------
+    # HTTP SECURITY CHECK
+    # -----------------------------------
+
+    http_result = check_http(target)
+
+    result["http"] = http_result
+
+    if not http_result["https"]:
+
+        result["vulnerabilities"].append({
+            "severity": "High",
+            "title": "HTTPS Not Detected",
+            "description":
+                "The target does not appear to be using HTTPS."
+        })
+
+    for issue in http_result["issues"]:
+
+        if "Missing security header" in issue:
+
+            result["vulnerabilities"].append({
+                "severity": "Low",
+                "title": issue,
+                "description":
+                    "Consider configuring the recommended security header."
+            })
+
+    # -----------------------------------
+    # SERVER VERSION
+    # -----------------------------------
+
+    server = http_result.get("server", "")
+
+    if server:
+
+        result["software"].append({
+            "port": 80,
+            "service": "Web Server",
+            "version": server
+        })
+
+        # Basic informational warning.
+        # This does NOT claim that the software is actually outdated.
+        result["vulnerabilities"].append({
+            "severity": "Low",
+            "title": "Server Version Exposed",
+            "description":
+                "The web server identifies itself as: "
+                + server
+                + ". Exposing detailed version information "
+                  "can provide useful information to attackers."
+        })
+
+    return result
+
+
+class ScannerHandler(http.server.SimpleHTTPRequestHandler):
+
+    def do_GET(self):
+
+        parsed = urllib.parse.urlparse(self.path)
+
+        if parsed.path == "/":
+
+            try:
+
+                with open(
+                    "index.html",
+                    "rb"
+                ) as file:
+
+                    content = file.read()
+
+                self.send_response(200)
+
+                self.send_header(
+                    "Content-Type",
+                    "text/html"
+                )
+
+                self.send_header(
+                    "Content-Length",
+                    str(len(content))
+                )
+
+                self.end_headers()
+
+                self.wfile.write(content)
+
+            except Exception:
+
+                self.send_error(
+                    500,
+                    "index.html not found"
+                )
+
+            return
+
+        if parsed.path == "/scan":
+
+            parameters = urllib.parse.parse_qs(
+                parsed.query
+            )
+
+            target = parameters.get(
+                "target",
+                [""]
+            )[0]
+
+            result = perform_scan(target)
+
+            data = json.dumps(
+                result
+            ).encode("utf-8")
+
+            self.send_response(200)
+
+            self.send_header(
+                "Content-Type",
+                "application/json"
+            )
+
+            self.send_header(
+                "Access-Control-Allow-Origin",
+                "*"
+            )
+
+            self.send_header(
+                "Content-Length",
+                str(len(data))
+            )
+
+            self.end_headers()
+
+            self.wfile.write(data)
+
+            return
+
+        self.send_error(404)
+
+
+print()
+print("======================================")
+print("   VULNERABILITY SCANNER")
+print("======================================")
+print()
+print("Server running at:")
+print("http://localhost:8000")
+print()
+print("Press CTRL+C to stop.")
+print()
+
+server = http.server.ThreadingHTTPServer(
+    ("localhost", PORT),
+    ScannerHandler
+)
+
+server.serve_forever()
